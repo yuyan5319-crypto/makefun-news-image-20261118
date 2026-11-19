@@ -1,9 +1,10 @@
 // The Orbit — one image that sums up Wednesday 18 November 2026.
 //
-// Node 22, standard library only, no network. Draws a newspaper front page
-// pixel by pixel (own PNG encoder, own rasteriser, own 5x7 bitmap type) and
-// writes it to /output/entry.png (MAKEFUN_OUTPUT_DIR stands in locally).
-// Fully deterministic: two runs write the same bytes.
+// Node 22, standard library only, no network. Draws a dense newspaper front
+// page pixel by pixel (own PNG encoder, own rasteriser, own 5x7 bitmap type)
+// and writes it to /output/entry.png (MAKEFUN_OUTPUT_DIR stands in locally).
+// 42 sourced stories in a 3-column grid, a UTC timeline, a lead story and a
+// markets strip. Fully deterministic: two runs write the same bytes.
 //
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
@@ -238,6 +239,33 @@ function iconQuake(x: number, y: number): void {
 }
 
 // ------------------------------------------- headline illustration ------
+// The Shenzhen summit: three flags over a table, on the eve of the trilateral.
+function summitScene(x: number, y: number, w: number, h: number): void {
+  frame(x, y, w, h, 3, INK);
+  rect(x + 3, y + 3, w - 6, h - 27, WHITE);
+  const fy = y + 16, fh = 64, fw = 118;
+  const fx = [x + 14, x + 143, x + 272];
+  // USA: stripes and canton.
+  rect(fx[0], fy, fw, fh, WHITE);
+  for (let i = 0; i < 7; i += 2) rect(fx[0], fy + i * 9, fw, 9, RED);
+  rect(fx[0], fy, 47, 32, BLUE);
+  // China: red field, five gold stars as discs.
+  rect(fx[1], fy, fw, fh, RED);
+  disc(fx[1] + 22, fy + 20, 7, GOLD);
+  disc(fx[1] + 44, fy + 10, 3, GOLD); disc(fx[1] + 52, fy + 20, 3, GOLD);
+  disc(fx[1] + 48, fy + 32, 3, GOLD); disc(fx[1] + 36, fy + 38, 3, GOLD);
+  // Russia: white, blue, red bands.
+  rect(fx[2], fy, fw, 21, WHITE); rect(fx[2], fy + 21, fw, 22, BLUE); rect(fx[2], fy + 43, fw, 21, RED);
+  const labels = ['USA', 'CHINA', 'RUSSIA'];
+  for (let i = 0; i < 3; i++) {
+    rect(fx[i] + Math.floor(fw / 2) - 1, fy + fh, 2, 12, INK);
+    drawText(fx[i] + Math.floor((fw - textWidth(labels[i], 1)) / 2), fy + fh + 14, labels[i], 1, INK, true);
+  }
+  rect(x + 14, y + 104, w - 28, 4, INK); // table
+  rect(x + 3, y + h - 24, w - 6, 21, INK); // caption strip
+  drawText(x + 14, y + h - 18, 'SHENZHEN: THE TRILATERAL EVE', 2, WHITE);
+}
+
 // The Kerch bridge: two pylons, a broken span, burst and smoke over the sea.
 function bridgeScene(x: number, y: number, w: number, h: number): void {
   frame(x, y, w, h, 3, INK);
@@ -266,93 +294,129 @@ function bridgeScene(x: number, y: number, w: number, h: number): void {
   for (let i = 0; i < 7; i++)                                        // wave strokes
     line(x + 24 + i * 54, seaY + 22, x + 44 + i * 54, seaY + 22, 3, DEEPSEA);
   rect(x + 3, y + h - 24, w - 6, 21, INK);                           // caption strip
-  drawText(x + 14, y + h - 18, 'KERCH BRIDGE AFTER THE STRIKE', 2, WHITE);
+  drawText(x + 14, y + h - 18, 'KERCH BRIDGE, DAY TWO OF STRIKES', 2, WHITE);
 }
 
 // ------------------------------------------------------------- compose ----
+// Dense newspaper front page: masthead + date bar + UTC timeline, one
+// illustrated lead story, then a 3-column grid of 42 short items (14 per
+// column), a markets strip and an in-brief line. Every item carries its
+// source; every story was first reported on 18 November 2026.
 rect(0, 0, W, H, PAPER);
 frame(10, 10, W - 20, H - 20, 3, INK);
 frame(18, 18, W - 36, H - 36, 1, INK);
 
 // Masthead
-centerText(40, 'THE ORBIT', 11, INK, true);
-centerText(128, 'WORLD NEWS IN ONE IMAGE · ALL THE DAY THAT FITS ONE PAGE', 2, GRAY);
-rect(36, 148, W - 72, 3, INK);
+centerText(30, 'THE ORBIT', 9, INK, true);
+centerText(102, 'WORLD NEWS IN ONE IMAGE · ALL THE DAY THAT FITS ONE PAGE', 2, GRAY);
+rect(36, 122, W - 72, 3, INK);
 
-// Date bar
-rect(36, 158, W - 72, 44, INK);
-centerText(170, 'WEDNESDAY 18 NOVEMBER 2026', 3, WHITE, true);
+// Date bar + date check
+rect(36, 130, W - 72, 38, INK);
+centerText(140, 'WEDNESDAY 18 NOVEMBER 2026', 3, WHITE, true);
+drawText(36, 176, 'DATE CHECK: 18 NOV 2026 WAS A WEDNESDAY - EVERY STORY BELOW WAS FIRST REPORTED ON 18 NOV 2026 - SOURCE NAMED ON EACH ITEM', 1, GRAY);
 
-// Headline story
-drawText(36, 220, 'UKRAINE WAR · EUROPE', 2, RED, true);
-drawText(36, 244, 'UKRAINE BLOWS OPEN', 6, INK, true);
-drawText(36, 300, 'THE CRIMEA BRIDGE', 6, INK, true);
-drawPara(36, 362,
-  'ZELENSKY CONFIRMS AN OVERNIGHT STRIKE PARTLY DESTROYED THE KERCH ' +
-  'BRIDGE, THE ONLY ROAD AND RAIL LINK FROM RUSSIA TO OCCUPIED CRIMEA. ' +
-  'MOSCOW CLOSED THE CROSSING AND STRUCK BRIDGES IN KYIV IN REPLY, ' +
-  'HOURS BEFORE A SUMMIT OF THE US, CHINESE AND RUSSIAN LEADERS.',
-  2, 516, 21, INK);
-bridgeScene(584, 356, 404, 168);
-rect(36, 534, W - 72, 3, INK);
-
-// Story grid: two columns, three rows of boxes.
-type Story = { head: string; body: string; icon: (x: number, y: number) => void };
-const stories: Story[] = [
-  {
-    head: 'SUMMIT IN SHENZHEN',
-    body: 'TRUMP FLIES TO CHINA TO MEET XI AND PUTIN IN A THREE-WAY SUMMIT. XI CALLS FOR OPEN ASIA-PACIFIC TRADE.',
-    icon: iconFlags,
-  },
-  {
-    head: 'GULF FLARE-UP',
-    body: 'US JETS HIT AN IRAN MISSILE SITE ON QESHM ISLAND. IRAN STRIKES BAHRAIN AND KUWAIT; 5 TANKERS HIT NEAR HORMUZ.',
-    icon: iconTanker,
-  },
-  {
-    head: 'US LOSES MEASLES-FREE STATUS',
-    body: 'THE US LOSES ITS MEASLES ELIMINATION STATUS AFTER 26 YEARS: 5,400+ CASES, THE WORST OUTBREAK IN 3 DECADES.',
-    icon: iconMeasles,
-  },
-  {
-    head: 'NVIDIA SALES TOP $100BN',
-    body: 'REVENUE DOUBLES TO $115.8BN IN A RECORD QUARTER. THE BOARD RULES OUT FOUNDER HUANG\'S RETURN AS CEO.',
-    icon: iconChip,
-  },
-  {
-    head: '19 KILLED IN SIBERIA CRASH',
-    body: 'A RUSSIAN MILITARY TRANSPORT PLANE CRASHES IN SIBERIA. ALL 19 PEOPLE ON BOARD ARE KILLED, MOSCOW SAYS.',
-    icon: iconPlane,
-  },
-  {
-    head: 'M6.0 QUAKE ROCKS PNG',
-    body: 'A MAGNITUDE 6 EARTHQUAKE STRIKES PAPUA NEW GUINEA AT A DEPTH OF 10 KM, THE GFZ RESEARCH CENTRE REPORTS.',
-    icon: iconQuake,
-  },
+// UTC timeline: six timed moments that span the day.
+drawText(36, 194, 'UTC TIMELINE', 2, RED, true);
+const tl: [string, string][] = [
+  ['03:42', 'M6.0 QUAKE HITS PNG'],
+  ['05:09', 'AN-12 DEATH TOLL: 19'],
+  ['14:35', 'BRIDGE STRIKE EXPLAINED'],
+  ['19:00', 'FED MINUTES RELEASED'],
+  ['21:13', 'JEFFRIES NOMINATED'],
+  ['23:47', 'WAYMO PULLS FREEWAY RIDES'],
 ];
-const colX = [36, 524];
-const rowY = [544, 652, 760];
-const boxW = 464, boxH = 100;
-for (let i = 0; i < stories.length; i++) {
-  const x = colX[i % 2], y = rowY[Math.floor(i / 2)];
-  const st = stories[i];
-  frame(x, y, boxW, boxH, 2, INK);
-  st.icon(x + 12, y + 22);
-  drawPara(x + 84, y + 10, st.head, 2, boxW - 96, 19, RED);
-  drawPara(x + 84, y + 30, st.body, 2, boxW - 96, 17, INK);
+for (let i = 0; i < tl.length; i++) {
+  const x = 200 + i * 132;
+  drawText(x, 194, tl[i][0], 2, INK, true);
+  drawPara(x, 212, tl[i][1], 1, 126, 9, INK);
+}
+rect(36, 232, W - 72, 2, INK);
+
+// Lead story: the Shenzhen summit eve (the day's top diplomacy, all 18 Nov).
+drawText(36, 240, 'APEC SUMMIT · SHENZHEN', 2, RED, true);
+drawText(36, 256, 'TRUMP, XI AND PUTIN', 4, INK, true);
+drawText(36, 290, 'MEET ON THURSDAY', 4, INK, true);
+drawPara(36, 326,
+  'TRUMP LANDED IN SHENZHEN FOR A FIRST-EVER THU TRILATERAL WITH XI AND ' +
+  'PUTIN. XI: FREE, OPEN TRADE. (REUTERS)',
+  2, 516, 19, INK);
+summitScene(584, 256, 404, 140);
+rect(36, 404, W - 72, 2, INK);
+
+// Story grid: three columns, fourteen items each.
+type Item = { head: string; body: string };
+const colA: Item[] = [
+  { head: 'GULF: IRAN HITS KUWAIT', body: 'IRAN FIRED ON US SITES IN KUWAIT OVERNIGHT; KUWAIT SAYS IT REPELLED THE ATTACK. (REUTERS)' },
+  { head: 'BOARD OF PEACE ON GAZA', body: 'THE US-RUN BOARD OF PEACE GAVE A BLEAK GAZA REBUILD UPDATE TO THE UN SECURITY COUNCIL. (AP)' },
+  { head: 'ISRAEL GROUND OP IN GAZA', body: 'ISRAEL LAUNCHED A RARE GROUND OPERATION BEYOND THE YELLOW LINE; HAMAS CONDEMNED IT. (BBC)' },
+  { head: 'MOSSAD LOBBIES US ON IRAN', body: "ISRAEL'S SPY CHIEF LOBBIED US OFFICIALS LAST WEEK FOR NEW JOINT STRIKES ON IRAN. (REUTERS)" },
+  { head: 'HOUTHIS RETAKE STRAIT', body: 'THE HOUTHIS RECAPTURED THE BAB EL-MANDEB STRAIT AND ARE CLOSING IN ON ADEN. (REUTERS)' },
+  { head: 'US TO KYIV: STRIKES FAIL', body: "WASHINGTON TOLD UKRAINE'S BACKERS THAT DEEP STRIKES DON'T WORK; FOCUS ON FRONT-LINE KIT. (AP)" },
+  { head: 'KAHANA TAKES THE CHAIR', body: "ISRAEL'S NEW SPEAKER PRESIDED OVER THE KNESSET AS THE EISENKOT BLOC MOVED ON REPEAL. (TOI)" },
+  { head: 'PALESTINIAN WOMAN KILLED', body: 'A 72-YEAR-OLD PALESTINIAN WOMAN WAS SHOT DEAD BY ISRAELI SETTLERS IN THE WEST BANK. (BBC)' },
+  { head: 'UK SANCTIONS SETTLERS', body: 'BRITAIN SANCTIONED FIRMS OVER ISRAELI SETTLEMENTS IN THE OCCUPIED WEST BANK. (BBC)' },
+  { head: 'US SOLDIER IN UK CUSTODY', body: 'A US SOLDIER HELD BY UK POLICE ON SPYING SUSPICION WAS TAKEN INTO US MILITARY CUSTODY. (BBC)' },
+  { head: 'RUSSIAN HELD IN SPY CASE', body: 'A RUSSIAN WAS ARRESTED FOR SPYING ON US DEFENCE FIRM PALANTIR OVER UKRAINE SUPPORT. (BBC)' },
+  { head: 'COSTA RICA KILLING', body: 'JOURNALIST CAMILO RODRIGUEZ WAS SHOT DEAD, THE FIRST SUCH KILLING IN 25 YEARS. (REUTERS)' },
+  { head: 'AN-12 CRASH: CASE OPENED', body: 'RUSSIA OPENED A CRIMINAL CASE OVER THE AN-12 CRASH THAT KILLED 19 ON TUESDAY. (INTERFAX)' },
+  { head: 'BRIDGE BLAST, VERIFIED', body: 'BBC VERIFY PUBLISHED NEW VIDEO OF THE BLASTS THAT FELLED THE KERCH BRIDGE ARCH ON TUE. (BBC)' },
+];
+const colB: Item[] = [
+  { head: 'GTA 6 LAUNCHES IN UK', body: 'GTA 6 WAS ABOUT TO LAUNCH IN THE UK AFTER A 13-YEAR WAIT AND TWO DELAYS. (BBC)' },
+  { head: 'PELOTLA WINS IN ALASKA', body: 'DEMOCRAT MARY PELOTLA WON THE LAST UNRESOLVED US SENATE RACE, BEATING THE INCUMBENT. (AP)' },
+  { head: 'JEFFRIES FOR US SPEAKER', body: 'DEMOCRATS NOMINATED HAKEEM JEFFRIES FOR US HOUSE SPEAKER, A FIRST FOR A BLACK LAWMAKER. (BBC)' },
+  { head: 'ICJ MYANMAR VERDICT DUE', body: "THE TOP UN COURT WAS SET TO RULE ON MYANMAR'S ALLEGED GENOCIDE AGAINST THE ROHINGYA. (AP)" },
+  { head: 'BURNHAM: BREXIT FAILED', body: 'UK PM ANDY BURNHAM SAID BREXIT HAS NOT WORKED, AHEAD OF AN EU RESET SUMMIT. (AP)' },
+  { head: 'ETHIOPIA-SUDAN ROW', body: 'ETHIOPIA AND SUDAN ACCUSED EACH OTHER OF BACKING ARMED FIGHTERS ACROSS THE BORDER. (AP)' },
+  { head: 'ITALY ANTISEMITISM LAW', body: 'ITALY APPROVED AN ANTISEMITISM LAW AS DEBATE OVER CRITICISM OF ISRAEL INTENSIFIED. (AP)' },
+  { head: 'EU SIGNS INDONESIA DEAL', body: 'EU GOVERNMENTS AUTHORISED SIGNATURE OF A TRADE DEAL WITH INDONESIA. (REUTERS)' },
+  { head: 'BRITAIN-EU DROP PHRASE', body: "BRITAIN AND THE EU DROPPED 'TRUSTED PARTNERSHIP' FROM A SUMMIT DRAFT. (REUTERS)" },
+  { head: 'KOREA EXAMS ANTI-CHEAT', body: 'SOUTH KOREA WILL CHECK GLASSES AND SEAL SHIRT BUTTONS TO STOP CHEATING IN THU EXAMS. (AP)' },
+  { head: 'OXFORD PROTESTS', body: 'AN OXFORD COLLEGE FACED ANTI-RACISM PROTESTS FOR HOSTING ACADEMIC NATHAN COFNAS. (AP)' },
+  { head: 'KULGAM CRPF ATTACK', body: 'FORCES HUNTED TWO GUNMEN AFTER AN ATTACK ON A CRPF POST IN KULGAM WOUNDED THREE. (IND TODAY)' },
+  { head: 'MODI BACK FROM ASEAN', body: 'PM MODI RETURNED TO DELHI AFTER THE ASEAN SUMMIT IN MANILA. (TIMES OF INDIA)' },
+  { head: 'M6.0 QUAKE ROCKS PNG', body: 'A SHALLOW M6.0 QUAKE STRUCK PAPUA NEW GUINEA AT 03:42 UTC, AT 10KM DEPTH. (REUTERS/GFZ)' },
+];
+const colC: Item[] = [
+  { head: 'FED: DEC HIKE LOOMS', body: 'FED MINUTES POINTED TO A DECEMBER HIKE; ALMOST ALL OFFICIALS BACKED A RISE. (REUTERS)' },
+  { head: 'NVIDIA GIVES UP ITS BEAT', body: 'NVIDIA FELL 2.9% AFTER A $115.8BN BEAT; THE S&P FELL FOR A FIFTH STRAIGHT DAY. (REUTERS)' },
+  { head: 'GOLD AT ONE-YEAR LOW', body: 'GOLD TUMBLED ABOUT 3% TO $3,723 AN OUNCE, ITS LOWEST IN A YEAR. (BLOOMBERG)' },
+  { head: 'RETAIL BRIGHT SPOT', body: 'TJX JUMPED 10.4% AND TARGET 5.6% ON STRONG RESULTS AND RAISED GUIDANCE. (FOOL)' },
+  { head: 'UNITEDHEALTH SINKS', body: 'UNITEDHEALTH FELL 10.2% AND HUMANA 13% AS HEALTHCARE COST FEARS HIT THE DOW. (FOOL)' },
+  { head: 'ANTHROPIC $1.4TN DEBUT', body: 'CLAUDE-MAKER ANTHROPIC WAS POISED FOR A $1.4TN+ STOCK MARKET DEBUT. (BBC)' },
+  { head: 'FORD SHIPS CATL CELLS', body: 'FORD SHIPPED ITS FIRST BATTERY CELLS USING CATL TECHNOLOGY FROM A MICHIGAN PLANT. (REUTERS)' },
+  { head: 'INDIA BONDS DRAW $1.1BN', body: 'FOREIGN INVESTORS BOUGHT $1.1BN OF INDIAN BONDS IN NOVEMBER, REVERSING 3 MONTHS OF SALES. (REUTERS)' },
+  { head: 'WAYMO PULLS FREEWAY CARS', body: 'WAYMO PULLED ALL ITS DRIVERLESS CARS FROM US FREEWAYS. (BBC)' },
+  { head: 'RUBIO: NO FOUL PLAY', body: "RUBIO SAID THERE WAS 'ZERO' INFORMATION THAT US OUTAGES WERE LINKED TO A MALIGN ACTOR. (AP)" },
+  { head: 'TFL BREACH HITS 265,000', body: 'A TFL PHOTOCARD BREACH EXPOSED 265,000 CUSTOMERS. (BBC)' },
+  { head: 'UK INFLATION 1-YEAR HIGH', body: 'UK INFLATION ROSE TO A ONE-YEAR HIGH; MARKETS TRIMMED RATE-HIKE BETS. (REUTERS)' },
+  { head: 'CYCLONE AKVAN BEARS DOWN', body: 'SEVERE CYCLONE AKVAN NEARED ANDHRA PRADESH; SIX DISTRICTS UNDER RED ALERT. (NEWS18)' },
+  { head: 'PRINCE HARRY: REJOIN ARMY', body: 'PRINCE HARRY SAID HE WOULD REJOIN THE ARMY AS HE WARNED OF THE RUSSIA THREAT. (BBC)' },
+];
+const cols: [number, string, Item[]][] = [
+  [36, 'WAR AND DIPLOMACY', colA],
+  [359, 'POLITICS AND THE WORLD', colB],
+  [682, 'MARKETS, TECH AND LIFE', colC],
+];
+const ROW_H = 37;
+for (const [cx, title, items] of cols) {
+  drawText(cx, 412, title, 2, RED, true);
+  rect(cx, 428, 306, 2, RED);
+  for (let i = 0; i < items.length; i++) {
+    const y = 436 + i * ROW_H;
+    const it = items[i];
+    drawText(cx, y, it.head, 2, INK, true);
+    drawPara(cx, y + 16, it.body, 1, 306, 9, INK);
+  }
 }
 
-// Markets strip
-rect(36, 872, W - 72, 46, INK);
-drawText(52, 882, 'MARKETS', 2, GOLD, true);
-drawText(148, 882, 'GOLD $3,775 -2.3% · S&P 500 -1.0% · DAX -2.1% · BRENT $91.55', 2, WHITE);
-drawText(52, 902, 'GOLD AT A ONE-YEAR LOW AS STOCKS SLIDE AND THE DOLLAR FIRMS', 2, LIGHT);
+// Markets strip (18 November closes, Reuters/Bloomberg).
+rect(36, 954, W - 72, 30, INK);
+centerText(963, 'MARKETS: S&P 500 -0.2% TO 7,324 · DOW -1.1% TO 50,198 · NASDAQ +0.4% TO 24,430 · NVIDIA -2.9% · GOLD $3,723 -3.3% · BRENT $91.95 · 10-YR 5.10% (REUTERS/BLOOMBERG)', 1, WHITE);
 
 // In brief
-drawText(36, 930, 'IN BRIEF', 2, RED, true);
-drawPara(36, 952,
-  'MODI RETURNS FROM THE ASEAN SUMMIT IN MANILA · ISRAEL\'S KNESSET ELECTS A NEW SPEAKER IN A BLOW TO NETANYAHU · JAPAN PROTESTS A SUSPECTED RUSSIAN AIRSPACE VIOLATION',
-  2, W - 72, 19, INK);
+drawText(36, 990, 'IN BRIEF: VOYAGER 1 HITS A LIGHT-DAY · WILLIAM AND KATE MEET MODI · POPE LEO LEAVES PERU · ZVEREV, ALCARAZ WIN AT ATP FINALS · JULIO IGLESIAS FACES COURT PROBE', 1, GRAY);
 
 // ---------------------------------------------------------------- png -----
 const CRC_TABLE = new Int32Array(256);
